@@ -1,12 +1,13 @@
 package com.budgetfriendly.bms.auth.service.impl;
 
-import com.budgetfriendly.bms.auth.dto.MasterCityDTO;
-import com.budgetfriendly.bms.auth.dto.MasterStateDTO;
-import com.budgetfriendly.bms.auth.dto.OauthDTO;
-import com.budgetfriendly.bms.auth.dto.UserDTO;
+import com.budgetfriendly.bms.auth.constant.AuthConstant;
+import com.budgetfriendly.bms.auth.dto.*;
+import com.budgetfriendly.bms.auth.entity.MasterRole;
 import com.budgetfriendly.bms.auth.entity.OauthTokenDetail;
+import com.budgetfriendly.bms.auth.entity.UserRoleMapping;
 import com.budgetfriendly.bms.auth.entity.Users;
 import com.budgetfriendly.bms.auth.repository.OauthTokenRepository;
+import com.budgetfriendly.bms.auth.repository.UserRoleMappingRepository;
 import com.budgetfriendly.bms.auth.repository.UsersRepository;
 import com.budgetfriendly.bms.auth.service.OauthService;
 import com.budgetfriendly.bms.auth.utill.OauthUtill;
@@ -47,17 +48,20 @@ import javax.annotation.PostConstruct;
 @Service
 public class OauthServiceImpl implements OauthService {
 
+    @Value("${subject}")
+    private String subject;
 
-    private String subject = "test";
-
-
-    private String issuer = "test";
+    @Value("${issuer}")
+    private String issuer;
 
     @Autowired
     private UsersRepository usersRepository;
 
     @Autowired
     private OauthTokenRepository oauthTokenRepository;
+
+    @Autowired
+    private UserRoleMappingRepository userRoleMappingRepository;
 
     @Autowired
     private OauthUtill oauthUtill;
@@ -71,7 +75,7 @@ public class OauthServiceImpl implements OauthService {
     @PostConstruct
     public void init() {
         try {
-            Resource resource = new ClassPathResource("oauth-private.key");
+            Resource resource = new ClassPathResource(AuthConstant.OAUTH);
             byte[] bdata = FileCopyUtils.copyToByteArray(resource.getInputStream());
             String privateKey = new String(bdata, StandardCharsets.UTF_8);
             byte[] keyBytes = org.apache.commons.codec.binary.Base64.decodeBase64(privateKey);
@@ -117,6 +121,9 @@ public class OauthServiceImpl implements OauthService {
                     }
                 }
 
+                UserRoleMapping usersRoleMapping = userRoleMappingRepository.findByUsersId(user.getId());
+
+
                 boolean isAuthenticated = false;
 
                 if(userName.equalsIgnoreCase(user.getUserName())){
@@ -126,7 +133,7 @@ public class OauthServiceImpl implements OauthService {
                 if (isAuthenticated) {
 
                     try {
-                        jwtTokenGenerators(user,responseMap);
+                        jwtTokenGenerators(user,usersRoleMapping.getMasterRole(),responseMap);
                     } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
                         e.printStackTrace();
                     }
@@ -162,7 +169,7 @@ public class OauthServiceImpl implements OauthService {
 
     }
 
-    public void jwtTokenGenerators(Users user, Map<String, Object> responseMap) throws NoSuchAlgorithmException, NoSuchProviderException{
+    public void jwtTokenGenerators(Users user, MasterRole masterRole, Map<String, Object> responseMap) throws NoSuchAlgorithmException, NoSuchProviderException{
 
         JSONObject jsonRes = new JSONObject();
 
@@ -190,6 +197,14 @@ public class OauthServiceImpl implements OauthService {
         stateDTO.setStatus(user.getMasterState().getStatus());
         stateDTO.setCreatedAt(user.getMasterState().getCreatedAt());
         userDTO.getMasterCityDTO().setMasterStateDTO(stateDTO);
+
+        MasterRoleDTO masterRoleDTO = new MasterRoleDTO();
+        masterRoleDTO.setId(masterRole.getId());
+        masterRoleDTO.setRoleName(masterRole.getRoleName());
+        masterRoleDTO.setRoleDescription(masterRole.getRoleDescription());
+        masterRoleDTO.setStatus(masterRole.getStatus());
+        masterRoleDTO.setCreatedAt(masterRole.getCreatedAt());
+        userDTO.setMasterRoleDTO(masterRoleDTO);
 
         Map<String, Object> userInfo = new ObjectMapper().convertValue(userDTO, Map.class);
 

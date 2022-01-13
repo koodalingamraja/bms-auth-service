@@ -14,6 +14,7 @@ public class UserDTO {
     private Boolean status;
     private Date createdAt;
     private MasterCityDTO masterCityDTO;
+    private MasterRoleDTO masterRoleDTO;
 
     public Long getId() {
         return id;
@@ -93,5 +94,13 @@ public class UserDTO {
 
     public void setMasterCityDTO(MasterCityDTO masterCityDTO) {
         this.masterCityDTO = masterCityDTO;
+    }
+
+    public MasterRoleDTO getMasterRoleDTO() {
+        return masterRoleDTO;
+    }
+
+    public void setMasterRoleDTO(MasterRoleDTO masterRoleDTO) {
+        this.masterRoleDTO = masterRoleDTO;
     }
 }
